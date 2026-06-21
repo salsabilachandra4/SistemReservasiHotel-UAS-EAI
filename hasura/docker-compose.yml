@@ -1,0 +1,37 @@
+services:
+  hasura-postgres:
+    image: postgres:15
+    container_name: hasura-postgres
+    restart: always
+    environment:
+      POSTGRES_DB: hasura_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5433:5432"
+    volumes:
+      - hasura_postgres_data:/var/lib/postgresql/data
+    networks:
+      - laravel-net
+
+  hasura:
+    image: hasura/graphql-engine:latest
+    container_name: hasura
+    restart: always
+    ports:
+      - "8081:8080"
+    depends_on:
+      - hasura-postgres
+    environment:
+      HASURA_GRAPHQL_DATABASE_URL: postgres://postgres:password@hasura-postgres:5432/hasura_db
+      HASURA_GRAPHQL_ENABLE_CONSOLE: "true"
+      HASURA_GRAPHQL_ADMIN_SECRET: admin123
+    networks:
+      - laravel-net
+
+networks:
+  laravel-net:
+    external: true
+
+volumes:
+  hasura_postgres_data:

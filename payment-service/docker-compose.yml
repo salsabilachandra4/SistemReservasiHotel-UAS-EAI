@@ -1,0 +1,53 @@
+services:
+  payment-app:
+    build: .
+    container_name: payment-app
+    volumes:
+      - .:/var/www
+      - payment_vendor:/var/www/vendor
+    networks:
+      - laravel-net
+    depends_on:
+      payment-db:
+        condition: service_healthy
+
+  payment-nginx:
+    image: nginx:stable-alpine
+    container_name: payment-nginx
+    ports:
+      - "8004:80"
+    volumes:
+      - .:/var/www
+      - payment_vendor:/var/www/vendor
+      - ../nginx/payment.conf:/etc/nginx/conf.d/default.conf
+    networks:
+      - laravel-net
+    depends_on:
+      - payment-app
+
+  payment-db:
+    image: mysql:8
+    container_name: payment-db
+    environment:
+      MYSQL_DATABASE: payments
+      MYSQL_ROOT_PASSWORD: secret
+    ports:
+      - "3310:3306"
+    volumes:
+      - payment_db_data:/var/lib/mysql
+    networks:
+      - laravel-net
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-psecret"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+networks:
+  laravel-net:
+    external: true
+
+volumes:
+  payment_db_data:
+  payment_vendor:
+  

@@ -1,0 +1,52 @@
+services:
+  customer-app:
+    build: .
+    container_name: customer-app
+    volumes:
+      - .:/var/www
+      - customer_vendor:/var/www/vendor
+    networks:
+      - laravel-net
+    depends_on:
+      customer-db:
+        condition: service_healthy
+
+  customer-nginx:
+    image: nginx:stable-alpine
+    container_name: customer-nginx
+    ports:
+      - "8001:80"
+    volumes:
+      - .:/var/www
+      - customer_vendor:/var/www/vendor
+      - ../nginx/customer.conf:/etc/nginx/conf.d/default.conf
+    networks:
+      - laravel-net
+    depends_on:
+      - customer-app
+
+  customer-db:
+    image: mysql:8
+    container_name: customer-db
+    environment:
+      MYSQL_DATABASE: customers
+      MYSQL_ROOT_PASSWORD: secret
+    ports:
+      - "3307:3306"
+    volumes:
+      - customer_db_data:/var/lib/mysql
+    networks:
+      - laravel-net
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-psecret"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+networks:
+  laravel-net:
+    external: true
+
+volumes:
+  customer_db_data:
+  customer_vendor:
